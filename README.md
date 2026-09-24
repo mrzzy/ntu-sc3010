@@ -1,5 +1,4 @@
-
-# SC3010 Project: Hugging Face Hack
+# SC3010 Project: OpenAI-Hugging Face incident
 
 ## Overview
 
