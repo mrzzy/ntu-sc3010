@@ -1,6 +1,6 @@
 # hdf5-pwn
 
-A proof of concept  demonstrating arbitrary local file disclosure
+A proof of concept demonstrating arbitrary local file disclosure
 through HDF5 external-storage datasets when an application opens untrusted
 HDF5 files without sandboxing.
 
@@ -10,13 +10,10 @@ HDF5 lets a dataset's raw data live in an external file; the path is stored in
 the HDF5 file and resolved by the library at read time, relative to the reading
 process's working directory.
 
-- `server.py` — Flask "HDF5 Viewer" that accepts uploaded `.h5` files, opens
+- `server.py` Flask "HDF5 Viewer" that accepts uploaded `.h5` files, opens
   them read-only with h5py, and renders the contents of every dataset.
-- `craft.py` — builds a crafted HDF5 file whose dataset is backed by an
+- `craft.py` Builds a crafted HDF5 file whose dataset is backed by an
   arbitrary external file given on the command line.
-- Prebuilt crafted files (dataset `data`, 512 bytes): `pwn.h5` reads
-  `/proc/self/environ` (the server process's environment), `pwn_env.h5` reads
-  the local `.env` file, and `pwn_server.h5` reads the local `server.py`.
 
 Uploading any of these files makes the server read and display the target
 file's contents, since h5py transparently follows the external reference.
@@ -44,6 +41,16 @@ Start the viewer server:
 uv run python server.py        # or: .venv/bin/python server.py
 ```
 
+Craft a malicious HDF5 file that references sensitive data:
+
+```sh
+python craft.py pwn_env.h5 /proc/self/environ --dataset data --size 512
+```
+
+Positional arguments: output HDF5 path and the external file to reference.
+`--dataset` sets the dataset name (default `data`); `--size` sets how many
+bytes the dataset maps (default 512).
+
 The app listens on `http://127.0.0.1:5000`. Upload a crafted file through the
 web form at `/`, or with `curl`:
 
@@ -54,27 +61,14 @@ curl -F "file=@pwn_env.h5" http://127.0.0.1:5000/upload
 ### Expected output
 
 The response previews every dataset in the uploaded file. For `pwn_env.h5`,
-dataset `/data` resolves to the external `.env` file and the page shows its
+dataset `/data` resolves to the external `/proc/self/environ` file and the page shows its
 contents:
 
 ```html
 <h1>Preview of pwn_env.h5</h1>
 <h2>/data</h2>
-<p>SECRET=MY_SECRET
+<p>SECRET=MY_SECRET</p>
 ```
-
-For `pwn.h5` the dataset reads `/proc/self/environ`, leaking the server
-process's environment variables (NUL bytes are rendered as newlines).
-
-### Crafting additional files
-
-```sh
-python craft.py out.h5 /etc/passwd --dataset data --size 512
-```
-
-Positional arguments: output HDF5 path and the external file to reference.
-`--dataset` sets the dataset name (default `data`); `--size` sets how many
-bytes the dataset maps (default 512).
 
 ## How it works
 
