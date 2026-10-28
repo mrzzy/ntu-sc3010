@@ -48,8 +48,12 @@ machine that opens it.
 
 - Python 3.11 or newer (`.python-version` pins 3.14)
 - [uv](https://docs.astral.sh/uv/) (optional; plain `pip` also works)
-- Dependencies: `fsspec`, `jinja2`
+- Dependencies: `fsspec==2025.10.0` (the vulnerable version), `jinja2`
 - JupyterLab or Jupyter Notebook to run the `.ipynb`
+
+> **Important:** The exploit requires `fsspec<=2025.10.0`. Newer versions
+> (2026+) patched the vulnerability by switching to `SandboxedEnvironment`.
+> The pip command below pins the correct version.
 
 ## Setup
 
@@ -57,7 +61,7 @@ machine that opens it.
 uv sync
 # or, with pip:
 python3 -m venv .venv
-.venv/bin/pip install fsspec jinja2 jupyterlab
+.venv/bin/pip install 'fsspec==2025.10.0' jinja2 jupyterlab
 ```
 
 ## Usage
